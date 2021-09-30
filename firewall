@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# Ron's humble configuration script SSH
+
+echo 1 > /proc/sys/net/ipv4/conf/all/log_martians
+#echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter 
+
+# Flush all chains
+/sbin/iptables --flush
+ 
+# Allow unlimited traffic on the loopback interface
+/sbin/iptables -A INPUT -i lo -j ACCEPT
+/sbin/iptables -A OUTPUT -o lo -j ACCEPT
+ 
+# defaults
+/sbin/iptables --policy INPUT DROP
+/sbin/iptables --policy OUTPUT DROP
+/sbin/iptables --policy FORWARD DROP
+ 
+
+# Allow unlimited outbound traffic
+/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -A OUTPUT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+ 
+#Ratelimit SSH for attack protection
+/sbin/iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 8 -j DROP
+/sbin/iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+/sbin/iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT
+
+
+/sbin/iptables -A INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT    # http
+
+
+
+# Allow pinging of your server
+/sbin/iptables -A INPUT -p icmp --icmp-type 8 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+
+# Drop all other traffic
+/sbin/iptables -A INPUT -j DROP
+
+
+# 146BC
+#/sbin/iptables -F
+#sbin/iptables -X
+#/sbin/iptables -t nat -F
+#/sbin/iptables -t nat -X
+#/sbin/iptables -t mangle -F
+#/sbin/iptables -t mangle -X
+#
+#
+#/sbin/iptables -P INPUT ACCEPT
+#/sbin/iptables -P FORWARD ACCEPT
+#/sbin/iptables -P OUTPUT ACCEPT
+#
+#
+
+# print the activated rules to the console when script is completed
+/sbin/iptables -nL
